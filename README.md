@@ -2,6 +2,10 @@
 
 A startup-scaling strategy game for computer science students. Turn a garage project into a unicorn by balancing **engineers, servers, bandwidth and databases** against **user happiness and money**, while climbing a tech tree of real CS.
 
+## Look & feel
+
+An isometric, bloom-lit three.js diorama of your company. Request packets stream from a globe of users through a bandwidth tower, rows of server racks and database stacks. Racks glow hotter as load rises. Dropped requests fall off the pipe in red. Bugs crawl around the racks (click to squash), fires break out during outages (click to extinguish), and golden packets drift by (click for a bonus). Engineers wander the office floor in their team colours. Sounds are synthesized live, and the icons are a custom SVG set.
+
 ## How it plays
 
 - **Architecture pipeline**: requests flow through Bandwidth → Compute → Database. Each layer behaves like a queue, so latency explodes as load nears 100%, and past 100% requests get dropped. Over-provision and you burn cash. Under-provision and users rage-tweet.

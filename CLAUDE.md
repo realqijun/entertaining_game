@@ -8,7 +8,7 @@ This file guides Claude Code (claude.ai/code) when it works with code in this re
 
 ## Tech stack
 
-- TypeScript (strict), React 19, Vite 8
+- TypeScript (strict), React 19, Vite 8, three.js (3D scene with bloom post-processing)
 - Vitest for tests
 - npm (lockfile committed)
 - Vercel (`vercel.json`: framework `vite`, output `dist`)
@@ -30,7 +30,8 @@ This file guides Claude Code (claude.ai/code) when it works with code in this re
 ```
 src/engine/   Pure, deterministic simulation (no React, no DOM)
 src/content/  Game data: products, founders, skills, events, cards, regions, quiz, codex, mutators, difficulties
-src/ui/       React components
+src/three/    three.js diorama (DataCenter.ts): racks, packets, bugs, fires, golden packets
+src/ui/       React components: HUD, dock, drawers, modals, World3D bridge, SVG icon set, WebAudio sfx
 src/meta.ts   Cross-run progression (stars, unlocks, achievements, daily challenge, save/load)
 src/App.tsx   Screen router (menu / setup / legacy / game)
 tests/        Vitest unit tests plus a heuristic bot (tests/bot.ts) used for balance guards
@@ -42,6 +43,7 @@ tests/        Vitest unit tests plus a heuristic bot (tests/bot.ts) used for bal
 - **Metrics** (`computeMetrics`) model three pipelines (bandwidth, compute, DB) as M/M/1 queues: latency = service ÷ (1 − utilization), and load above 100% drops requests. Satisfaction is a product-weighted mix of latency, reliability, features, bugs and price.
 - **Decisions that pause the game** go in `s.pending` (event choices, board cards, funding, bridge loan, IPO). The loop does not tick while `pending` is non-empty. Resolve them through `src/engine/actions.ts`.
 - **Randomness**: always use `rand(s)` / `pick(s, …)` from `src/engine/rng.ts` (a seeded mulberry32 stored in `s.rng`) inside the engine and content. That keeps runs and the daily challenge deterministic. `Math.random` is only acceptable in UI-only code (e.g. which quiz question to show, visual effects).
+- **3D scene**: `World3D.tsx` turns `GameState` into a `SceneState` snapshot each render (`sceneStateOf`). `DataCenter` animates it in its own requestAnimationFrame loop and never touches `GameState`. Clicks on bugs, fires and golden packets come back through `onPick` and are applied with `actions.ts` (`squashBug`, `extinguish`, `catchGolden`). HTML zone tags are positioned each frame from `onAnchors`.
 - **Content** is plain data plus small functions. Events and cards are referenced by id from state, so ids must stay stable once shipped (saves depend on them).
 
 ## Conventions
@@ -50,4 +52,6 @@ tests/        Vitest unit tests plus a heuristic bot (tests/bot.ts) used for bal
 - When changing balance numbers, run the balance report before and after. `tests/engine.test.ts` has guards: a competent bot must reach $1B on every product, and an idle bot must not.
 - Player-facing copy is plain and friendly. Each skill, mutator and codex entry should teach a real CS concept accurately.
 - Styling lives in `src/styles.css` (CSS variables on `:root`, dark theme). Layouts must work down to 390px wide with no horizontal scroll.
+- Keep on-screen copy short: icons and numbers first, with details in `title` tooltips. Sounds are synthesized in `src/ui/sfx.ts`, and icons are inline SVG components in `src/ui/Icons.tsx`, so there are no binary assets apart from `public/og.png`.
+- Instanced meshes in the scene must keep `frustumCulled = false`, because they start empty and a stale bounding sphere would hide them.
 - Add or update tests alongside engine behaviour changes.

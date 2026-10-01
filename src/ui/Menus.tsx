@@ -6,6 +6,8 @@ import { DIFFICULTIES, MUTATORS, getDifficulty, getMutator } from '../content/wo
 import type { GameState, RunConfig } from '../engine/types';
 import { ACHIEVEMENTS, LEGACY_PERKS, dailyConfig, dailyNumber, isUnlocked, randomCompanyName, todayKey, type Meta } from '../meta';
 import { CodexView } from './Feeds';
+import { Logo } from './Icons';
+import { MenuWorld } from './MenuWorld';
 import { money } from './format';
 
 export function MainMenu({ meta, save, onNew, onContinue, onDaily, onLegacy }: { meta: Meta; save: GameState | null; onNew: () => void; onContinue: () => void; onDaily: () => void; onLegacy: () => void }) {
@@ -14,16 +16,10 @@ export function MainMenu({ meta, save, onNew, onContinue, onDaily, onLegacy }: {
   const dailyBest = meta.dailies[today];
   return (
     <div className="menu">
-      <div className="menu-bg" aria-hidden>
-        {Array.from({ length: 24 }, (_, i) => (
-          <span key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i * 0.7) % 8}s`, animationDuration: `${8 + (i % 5) * 2}s` }}>
-            {['O(1)', 'O(log n)', 'O(n)', 'O(n²)', '{ }', '0x1F', '=>', 'λ', '∑', '<T>', '&&', '#!'][i % 12]}
-          </span>
-        ))}
-      </div>
+      <MenuWorld />
       <div className="menu-card">
-        <h1 className="title"><span className="logo">O(</span>Big-O Tycoon<span className="logo">)</span></h1>
-        <p className="tagline">Scale a startup from a garage to an IPO. Allocate engineers, servers and bandwidth, climb a tech tree of real CS, and find out what O(n²) means for your cloud bill.</p>
+        <div className="title-row"><Logo size={56} /><h1 className="title">Big-O Tycoon</h1></div>
+        <p className="tagline">Garage → servers → unicorn 🦄</p>
         <div className="menu-buttons">
           {save && (
             <button className="btn primary big" onClick={onContinue}>
@@ -73,31 +69,29 @@ export function Setup({ meta, onStart, onBack }: { meta: Meta; onStart: (cfg: Ru
         <div className="mult">Score ×{mult.toFixed(2)}</div>
       </div>
 
-      <h3>1. What are you building?</h3>
+      <h3>1. Build</h3>
       <div className="pick-grid">
         {PRODUCTS.map((p) => {
           const open = isUnlocked(meta, p.id, p.unlockCost);
           return (
-            <button key={p.id} className={`pick ${productId === p.id ? 'selected' : ''}`} disabled={!open} onClick={() => setProduct(p.id)}>
+            <button key={p.id} className={`pick ${productId === p.id ? 'selected' : ''}`} disabled={!open} onClick={() => setProduct(p.id)} title={p.twist}>
               <span className="pick-emoji">{p.emoji}</span>
               <b>{p.name}</b>
-              <span className="small">{p.tagline}</span>
-              <span className="muted small">{p.twist}</span>
+              <span className="muted small">{p.tagline}</span>
               {!open && <span className="lock">🔒 {p.unlockCost}★ in Legacy</span>}
             </button>
           );
         })}
       </div>
 
-      <h3>2. Who are you?</h3>
+      <h3>2. Founder</h3>
       <div className="pick-grid">
         {FOUNDERS.map((f) => {
           const open = isUnlocked(meta, f.id, f.unlockCost);
           return (
-            <button key={f.id} className={`pick ${founderId === f.id ? 'selected' : ''}`} disabled={!open} onClick={() => setFounder(f.id)}>
+            <button key={f.id} className={`pick ${founderId === f.id ? 'selected' : ''}`} disabled={!open} onClick={() => setFounder(f.id)} title={f.desc}>
               <span className="pick-emoji">{f.emoji}</span>
               <b>{f.name}</b>
-              <span className="small">{f.desc}</span>
               <ul className="perks">{f.perks.map((x) => <li key={x}>{x}</li>)}</ul>
               {!open && <span className="lock">🔒 {f.unlockCost}★ in Legacy</span>}
             </button>
@@ -105,39 +99,37 @@ export function Setup({ meta, onStart, onBack }: { meta: Meta; onStart: (cfg: Ru
         })}
       </div>
 
-      <h3>3. Complexity class</h3>
+      <h3>3. Difficulty</h3>
       <div className="pick-row">
         {DIFFICULTIES.map((d) => {
           const open = isUnlocked(meta, d.id, d.unlockCost);
           return (
-            <button key={d.id} className={`pick small-pick ${difficultyId === d.id ? 'selected' : ''}`} disabled={!open} onClick={() => setDifficulty(d.id)}>
+            <button key={d.id} className={`pick small-pick ${difficultyId === d.id ? 'selected' : ''}`} disabled={!open} onClick={() => setDifficulty(d.id)} title={d.desc}>
               <b className="mono">{d.name}</b>
-              <span className="small">{d.label} · score ×{d.scoreMult}</span>
-              <span className="muted small">{d.desc}</span>
+              <span className="muted small">score ×{d.scoreMult}</span>
               {!open && <span className="lock">🔒 {d.unlockCost}★</span>}
             </button>
           );
         })}
       </div>
 
-      <h3>4. World rules <span className="muted small">(optional mutators: each bends one law of computing and multiplies your score)</span></h3>
-      <div className="pick-grid">
+      <h3>4. Weird worlds <span className="muted small">optional · hover for details</span></h3>
+      <div className="pick-row">
         {MUTATORS.map((m) => {
           const open = isUnlocked(meta, m.id, m.unlockCost);
           const on = mutators.includes(m.id);
           return (
-            <button key={m.id} className={`pick ${on ? 'selected' : ''}`} disabled={!open} onClick={() => setMutators(on ? mutators.filter((x) => x !== m.id) : [...mutators, m.id])}>
+            <button key={m.id} className={`pick small-pick ${on ? 'selected' : ''}`} disabled={!open} onClick={() => setMutators(on ? mutators.filter((x) => x !== m.id) : [...mutators, m.id])} title={`${m.desc}\n\n💡 ${m.lesson}`}>
               <span className="pick-emoji">{m.emoji}</span>
-              <b>{m.name} <span className="chip">×{m.scoreMult}</span></b>
-              <span className="small">{m.desc}</span>
-              <span className="muted small">💡 {m.lesson}</span>
+              <b>{m.name}</b>
+              <span className="muted small">score ×{m.scoreMult}</span>
               {!open && <span className="lock">🔒 {m.unlockCost}★ in Legacy</span>}
             </button>
           );
         })}
       </div>
 
-      <h3>5. Name your company</h3>
+      <h3>5. Name</h3>
       <div className="name-row">
         <input value={name} maxLength={28} onChange={(e) => setName(e.target.value)} aria-label="Company name" />
         <button className="btn ghost" onClick={() => setName(randomCompanyName())}>🎲</button>
@@ -171,7 +163,7 @@ export function Legacy({ meta, onMeta, onBack }: { meta: Meta; onMeta: (m: Meta)
         <h2>★ Legacy</h2>
         <div className="mult">{meta.stars}★ available · {meta.totalStars}★ earned</div>
       </div>
-      <p className="muted">Every run earns GitHub stars ★, based on your score plus achievements. Spend them to unlock new products, founders, harder complexity classes, weird worlds and permanent perks.</p>
+      <p className="muted">Earn ★ every run. Spend them on unlocks.</p>
       <div className="tabs">
         <button className={`tab ${tab === 'unlocks' ? 'active' : ''}`} onClick={() => setTab('unlocks')}>Unlocks</button>
         <button className={`tab ${tab === 'achievements' ? 'active' : ''}`} onClick={() => setTab('achievements')}>Achievements {meta.achievements.length}/{ACHIEVEMENTS.length}</button>

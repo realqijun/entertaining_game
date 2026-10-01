@@ -209,3 +209,37 @@ export function expand(s: GameState, id: string): boolean {
   refresh(s);
   return true;
 }
+
+/** Clicking a bug in the 3D scene squashes a cluster of them. */
+export function squashBug(s: GameState): number {
+  if (s.bugs < 0.5) return 0;
+  const n = Math.min(s.bugs, Math.max(1, s.bugs / 15));
+  s.bugs -= n;
+  s.stats.bugsFixed += n;
+  refresh(s);
+  return n;
+}
+
+/** Clicking a fire during an outage knocks a few hours off the incident. */
+export function extinguish(s: GameState): number {
+  if (s.outageHours <= 0) return 0;
+  const h = Math.min(s.outageHours, 3);
+  s.outageHours -= h;
+  return h;
+}
+
+export type GoldenReward = { kind: 'cash' | 'rp' | 'hype'; amount: number };
+
+/** Golden packets are rare bonus pickups that reward paying attention. */
+export function catchGolden(s: GameState): GoldenReward {
+  const roll = (s.day * 7 + s.skills.length * 3 + Math.round(s.users)) % 3;
+  let reward: GoldenReward;
+  if (roll === 0) reward = { kind: 'cash', amount: Math.round(Math.max(10_000, s.metrics.revenueDay * 7) / 1000) * 1000 };
+  else if (roll === 1) reward = { kind: 'rp', amount: Math.round(15 + s.skills.length * 4) };
+  else reward = { kind: 'hype', amount: 0.25 };
+  if (reward.kind === 'cash') s.cash += reward.amount;
+  if (reward.kind === 'rp') s.rp += reward.amount;
+  if (reward.kind === 'hype') s.hype += reward.amount;
+  refresh(s);
+  return reward;
+}

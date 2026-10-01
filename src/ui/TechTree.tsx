@@ -4,6 +4,7 @@ import { BRANCHES, SKILLS, getSkill, skillStatus } from '../content/skills';
 import * as A from '../engine/actions';
 import { computeMods } from '../engine/mods';
 import type { GameState, ModKey, SkillNode } from '../engine/types';
+import { sfx } from './sfx';
 
 type Act = <T>(fn: (s: GameState) => T) => T;
 
@@ -29,7 +30,7 @@ export function TechTree({ s, act, onClose }: { s: GameState; act: Act; onClose:
         <div className="tt-head">
           <h2>🌳 Tech Tree</h2>
           <div className="rp">🔬 <b>{Math.floor(s.rp)}</b> RP <span className="muted">(+{(s.metrics.effective.rnd * 0.9 * computeMods(s).researchSpeed).toFixed(1)}/day)</span></div>
-          <div className="muted small">After researching, answer a CS question for a {scholar ? '50' : '25'}% RP refund. ⛔ = locked out by a rival choice.</div>
+          <div className="muted small">🧠 Quiz after each = {scholar ? '50' : '25'}% refund</div>
           <button className="btn sm" onClick={onClose} aria-label="Close tech tree">✕</button>
         </div>
         <div className="tt-body">
@@ -68,8 +69,7 @@ export function TechTree({ s, act, onClose }: { s: GameState; act: Act; onClose:
               <NodeDetail s={s} node={node} onResearch={doResearch} />
             ) : (
               <div className="muted">
-                <p>Select a technology to see what it does and the real CS concept behind it.</p>
-                <p>Effects stack, so climbing a branch compounds. Some techs are rivals: Monolith vs Microservices, SQL vs NoSQL, Serverless vs Bare Metal.</p>
+                <p>👈 Pick a tech</p>
               </div>
             )}
           </aside>
@@ -143,7 +143,7 @@ function NodeDetail({ s, node, onResearch }: { s: GameState; node: SkillNode; on
       <div className="muted small">Tier {node.tier} · {node.cost} RP</div>
       <p>{node.desc}</p>
       <ul className="effects">{effects}</ul>
-      <div className="lesson"><b>📚 CS concept</b><p>{node.lesson}</p></div>
+      <details className="lesson"><summary>📚 Learn the CS</summary><p>{node.lesson}</p></details>
       {node.requires.length > 0 && <div className="small">Requires: {node.requires.map((r) => `${s.skills.includes(r) ? '✔' : '✘'} ${getSkill(r)?.name}`).join(', ')}</div>}
       {node.excludes && <div className="small warn">Rival of: {node.excludes.map((r) => getSkill(r)?.name).join(', ')}. You can only pick one.</div>}
       {st === 'owned' ? (
@@ -174,7 +174,7 @@ function QuizModal({ q, node, scholar, onDone }: { q: QuizQuestion; node: SkillN
               key={o}
               className={`btn quiz-opt ${picked !== null ? (i === q.answer ? 'right' : i === picked ? 'wrong' : '') : ''}`}
               disabled={picked !== null}
-              onClick={() => setPicked(i)}
+              onClick={() => { setPicked(i); if (i === q.answer) sfx.correct(); else sfx.wrong(); }}
             >
               {o}
             </button>
