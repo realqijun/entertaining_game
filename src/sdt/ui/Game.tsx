@@ -140,7 +140,12 @@ export function Game({ initial, run, onAgain, onHome, onJoin }: Props) {
             <Inspector s={s} comp={sel} run={doRun} />
           ) : (
             <div className="insp empty">
-              <p>👆 Click a component to inspect it and act.</p>
+              <div className="empty-art" aria-hidden>
+                <span>🖥️</span>
+                <span>🗄️</span>
+                <span className="tap">👆</span>
+              </div>
+              <p>Tap a part of your system to see how it is doing and upgrade it.</p>
             </div>
           )}
           <Metrics s={s} />

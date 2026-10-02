@@ -34,7 +34,7 @@ src/sdt/engine/       Pure, deterministic simulation (no React, no DOM)
   actions.ts          Every player action; returns an error string or null
   postmortem.ts       Incident trace → cause / impact / what helped / prevention
 src/sdt/content/      balance.ts (all tunable numbers), tech.ts (9-node tree), events.ts (traffic + failure schedule)
-src/sdt/ui/           React: Landing, Game, Canvas (SVG architecture), Inspector, Panels (HUD/metrics/incident bar), Modals, Stats
+src/sdt/ui/           React: Landing, Game, Canvas (SVG architecture), Art (SVG characters, gauges, onboarding scenes), Inspector, Panels (HUD/metrics/incident bar), Modals, Stats
 src/sdt/analytics.ts  Playtest events (localStorage + optional VITE_ANALYTICS_URL), cohort and source detection, sign-ups
 src/sdt/report.ts     Success targets, observation thresholds, and the report computed from events
 tests/sdt/            Engine and report tests, plus a heuristic bot (bot.ts: smart / reactive / idle) for balance guards
@@ -57,5 +57,6 @@ tests/sdt/            Engine and report tests, plus a heuristic bot (bot.ts: sma
 - When changing numbers in `content/balance.ts` or `events.ts`, run `npx vitest run tests/sdt`. Guards: smart and reactive bots must reach 1M users on seeds 1–10 by day 45, an idle bot must not, and the first incident must stay the day-6 database overload.
 - Player-facing copy is plain and short, and each tech/postmortem line should teach a real system-design concept accurately (simplified, not production advice).
 - Styling lives in `src/sdt/styles.css` (CSS variables on `:root`, dark theme). Layouts must work down to 390px wide with no horizontal scroll. The canvas switches to a vertical layout at ≤ 640px.
+- Components are drawn as characters in `src/sdt/ui/Art.tsx`. Their faces show load (`moodFor`: happy → ok → sweat → panic, plus dead and sleep). Prefer pictures, faces and gauges over extra text. In SVG, a CSS `transform` animation overrides the element's `transform` attribute, so put animations on an inner `<g>` and the position on the outer one.
 - Sounds are synthesized in `src/sdt/ui/sfx.ts`. Apart from `public/og.png` and the favicon there are no binary assets.
 - Add or update tests alongside engine or report changes.

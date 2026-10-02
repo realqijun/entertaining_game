@@ -1,6 +1,7 @@
 import { BAL, MILESTONES } from '../content/balance';
 import { availability, dailyCost, dailyRevenue, users } from '../engine/sim';
 import type { GameState, Point } from '../engine/types';
+import { Gauge } from './Art';
 import { avail, money, ms, num, pct, utilTone } from './format';
 
 export function Hud({ s, paused, fast, onPause, onFast, onNext, onResearch, onMenu, researchPulse }: {
@@ -25,31 +26,36 @@ export function Hud({ s, paused, fast, onPause, onFast, onNext, onResearch, onMe
         99.99<span>%</span>
       </button>
       <div className="hud-stat" title={`Day ${s.day} of ${BAL.lastDay}. The run ends if you have not reached 1M users by day ${BAL.lastDay}.`}>
+        <span className="hud-ic">📅</span>
         <small>Day</small>
         <b>{s.day}</b>
       </div>
       <div className="hud-stat grow" title={`Next milestone: ${target.title} at ${num(target.users)} users`}>
-        <small>Users → {num(target.users)}</small>
+        <span className="hud-ic">👥</span>
+        <small>Users → {num(target.users)} 🚩</small>
         <b>{num(u)}</b>
         <i className="prog">
           <i style={{ width: `${prog * 100}%` }} />
         </i>
       </div>
       <div className="hud-stat" title={`Revenue ${money(dailyRevenue(s.metrics))}/day − costs ${money(dailyCost(s))}/day`}>
+        <span className="hud-ic">💰</span>
         <small>Cash</small>
         <b className={s.cash < 300 ? 'bad' : ''}>{money(s.cash)}</b>
         <em className={net >= 0 ? 'good' : 'bad'}>{net >= 0 ? '+' : ''}{money(net)}/d</em>
       </div>
       <div className="hud-stat" title="Reputation. Outages and slow days lower it, which slows growth. At 0 your users leave.">
+        <span className="hud-ic">{s.rep >= 55 ? '😊' : s.rep >= 30 ? '😐' : '😟'}</span>
         <small>Rep</small>
         <b className={s.rep < 30 ? 'bad' : s.rep < 55 ? 'warn' : ''}>{Math.round(s.rep)}</b>
       </div>
       <div className="hud-stat hide-sm" title="Share of admitted requests served successfully so far">
+        <span className="hud-ic">🛡️</span>
         <small>Uptime</small>
         <b>{avail(availability(s))}</b>
       </div>
       <button className={`btn research${researchPulse ? ' pulse' : ''}`} onClick={onResearch} title="Tech tree">
-        ◆ Research{s.rp > 0 && <span className="pill">{s.rp}</span>}
+        🔬 Research{s.rp > 0 && <span className="pill">{s.rp}</span>}
       </button>
       <div className="clock">
         <button className="btn sm" onClick={onPause} title={paused ? 'Play' : 'Pause'} aria-label={paused ? 'Play' : 'Pause'}>
@@ -91,26 +97,30 @@ export function Metrics({ s }: { s: GameState }) {
     <section className="metrics" aria-label="Metrics">
       <div className="tiles">
         <div className="tile" title="Peak requests per second">
-          <small>Traffic</small>
+          <small>👥 Traffic</small>
           <b>{num(m.demand)}<em>req/s</em></b>
           <Spark pts={pts} k="demand" max={maxDemand * 1.1} />
         </div>
         <div className={`tile tone-${m.latency >= BAL.latencyOk ? 'over' : m.latency >= 300 ? 'hot' : 'ok'}`} title={`Latency at peak. Recovery needs < ${BAL.latencyOk} ms.`}>
-          <small>Latency</small>
+          <small>⏱ Latency</small>
           <b>{ms(m.latency)}</b>
           <Spark pts={pts} k="latency" max={1500} line={BAL.latencyOk} />
         </div>
         <div className={`tile tone-${m.errRate >= BAL.errOk ? 'over' : 'ok'}`} title={`Failed ÷ admitted requests. Recovery needs < ${BAL.errOk * 100}%.`}>
-          <small>Errors</small>
+          <small>❌ Errors</small>
           <b>{(m.errRate * 100).toFixed(m.errRate > 0 && m.errRate < 0.1 ? 1 : 0)}%</b>
           <Spark pts={pts} k="errRate" max={1} line={BAL.errOk} />
         </div>
       </div>
-      <div className="utils">
-        <Util label="App" u={m.appUtil} detail={`${num(m.appLoad)} / ${num(m.appCap)} req/s`} />
-        <Util label="DB" u={m.dbUtil} detail={`${num(m.dbOps)} / ${num(m.dbCap)} ops/s`} />
-        {s.cache.on && <Util label="Cache hit" u={m.cacheHit} detail="share of reads served from memory" good />}
+      <div className="gauges">
+        <Gauge u={m.appUtil} label="🖥️ App servers" sub={`${num(m.appLoad)} / ${num(m.appCap)} req/s`} />
+        <Gauge u={m.dbUtil} label="🗄️ Database" sub={`${num(m.dbOps)} / ${num(m.dbCap)} ops/s`} />
       </div>
+      {s.cache.on && (
+        <div className="utils">
+          <Util label="⚡ Cache hit" u={m.cacheHit} detail="share of reads served from memory" good />
+        </div>
+      )}
       <ul className="alerts" aria-live="polite">
         {s.alerts.length === 0 && <li className="calm">✓ No alerts</li>}
         {s.alerts.map((a, i) => (
@@ -151,7 +161,7 @@ export function IncidentBar({ s, onHint }: { s: GameState; onHint: () => void })
   return (
     <div className={`incident${inc ? ' open' : ''}`} role="status">
       <span className="siren" aria-hidden>
-        {inc ? '🚨' : '⚠'}
+        {inc ? '🚨' : '⚠️'}
       </span>
       <div>
         <b>{title}</b>

@@ -3,7 +3,8 @@ import { BAL, BUILD, CACHE, DB_TIERS, INSTANCE_DELAY, SIZES } from '../content/b
 import * as A from '../engine/actions';
 import { cacheHitRate } from '../engine/sim';
 import type { Component, GameState, Size } from '../engine/types';
-import { money, num, pct } from './format';
+import { CacheArt, Crowd, DbArt, LbArt, ServerBox, moodFor } from './Art';
+import { money, num, pct, utilTone } from './format';
 
 export type Run = (name: string, fn: (s: GameState) => A.Result) => void;
 
@@ -56,7 +57,7 @@ export function Inspector({ s, comp, run }: Props) {
   if (comp === 'users') {
     return (
       <div className="insp">
-        <h3>Users</h3>
+        <h3 className="insp-head"><Mini kind="users" s={s} />Users</h3>
         <Row k="Demand" v={`${num(m.demand)} req/s`} />
         <Row k="Mix" v={`${pct(m.read)} reads`} />
         {s.workload.cause && <Row k="Today" v={s.workload.cause} />}
@@ -89,7 +90,7 @@ export function Inspector({ s, comp, run }: Props) {
     const building = s.builds.some((b) => b.kind === 'lb');
     return (
       <div className="insp">
-        <h3>Load balancer</h3>
+        <h3 className="insp-head"><Mini kind="lb" s={s} />Load balancer</h3>
         <p className="muted small">Splits traffic across app instances. Without health checks it keeps sending traffic to dead ones.</p>
         {s.lb && <Row k="Targets" v={`${s.instances.filter((i) => i.status !== 'booting').length} instances`} />}
         <div className="acts">
@@ -110,7 +111,7 @@ export function Inspector({ s, comp, run }: Props) {
     const addWhy = A.canAddInstance(s);
     return (
       <div className="insp">
-        <h3>App servers</h3>
+        <h3 className="insp-head"><Mini kind="app" s={s} />App servers</h3>
         <Row k="Load" v={`${num(m.appLoad)} / ${num(m.appCap)} req/s (${pct(m.appUtil)})`} />
         <div className="inst-list">
           {s.instances.map((i) => (
@@ -158,7 +159,7 @@ export function Inspector({ s, comp, run }: Props) {
     const building = s.builds.find((b) => b.kind === 'cache' || b.kind === 'cacheTune');
     return (
       <div className="insp">
-        <h3>Read cache</h3>
+        <h3 className="insp-head"><Mini kind="cache" s={s} />Read cache</h3>
         <p className="muted small">Answers repeated reads from memory. Starts cold, warms over a few steps, and never helps writes.</p>
         {s.cache.on && (
           <>
@@ -178,7 +179,7 @@ export function Inspector({ s, comp, run }: Props) {
   const why = A.canUpgradeDb(s);
   return (
     <div className="insp">
-      <h3>Database</h3>
+      <h3 className="insp-head"><Mini kind="db" s={s} />Database</h3>
       <Row k="Load" v={`${num(m.dbOps)} / ${num(m.dbCap)} ops/s (${pct(m.dbUtil)})`} />
       <Row k="Per request" v={`${(m.dbOps / Math.max(1, Math.min(m.appLoad, m.appCap))).toFixed(2)} ops`} />
       <p className="muted small">Every uncached read and every write reaches the database. Adding app servers does not raise its capacity.</p>
@@ -188,5 +189,24 @@ export function Inspector({ s, comp, run }: Props) {
         )}
       </div>
     </div>
+  );
+}
+
+/** The component's character, drawn small next to the inspector title. */
+function Mini({ kind, s }: { kind: Component; s: GameState }) {
+  const m = s.metrics;
+  const tone = kind === 'db' ? utilTone(m.dbUtil) : kind === 'app' ? (m.downShare > 0 ? 'over' : utilTone(m.appUtil)) : 'ok';
+  return (
+    <svg viewBox="-40 -40 80 80" className={`insp-mini tone-${tone}`} aria-hidden>
+      {kind === 'users' && <Crowd demand={m.demand} limited={s.limit < 1} spike={false} />}
+      {kind === 'lb' && <LbArt on={s.lb} hc={s.hc} mood={m.downShare > 0 ? 'panic' : 'happy'} />}
+      {kind === 'cache' && <CacheArt on={s.cache.on} warm={s.cache.warm} mood="happy" />}
+      {kind === 'db' && <DbArt util={m.dbUtil} mood={moodFor(m.dbUtil)} upgrading={false} />}
+      {kind === 'app' && (
+        <g transform="translate(-34,-14)">
+          <ServerBox w={68} h={28} status={m.downShare > 0 ? 'down' : 'up'} util={m.appUtil} size="M" label="" />
+        </g>
+      )}
+    </svg>
   );
 }

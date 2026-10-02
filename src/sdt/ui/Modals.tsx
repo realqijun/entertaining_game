@@ -5,6 +5,7 @@ import * as A from '../engine/actions';
 import { postmortem } from '../engine/postmortem';
 import { availability, users } from '../engine/sim';
 import type { GameState, Incident, TechId } from '../engine/types';
+import { CoachArt } from './Art';
 import { avail, money, num } from './format';
 
 export function Modal({ children, onClose, wide, label }: { children: ReactNode; onClose?: () => void; wide?: boolean; label: string }) {
@@ -154,10 +155,10 @@ export function Milestone({ s, index, onClose, onResearch }: { s: GameState; ind
 }
 
 const COACH = [
-  { title: 'You run the system', text: 'Requests flow left to right: users → app server → database. Grow from 50k to 1M users without falling over.' },
-  { title: 'Watch the load', text: 'Each box shows how busy it is. Near 100% latency climbs; above 100% work queues up and requests fail.' },
-  { title: 'Click a box to act', text: 'Inspect it and choose an upgrade. Changes cost cash and land overnight, or after a few steps during an incident.' },
-  { title: 'When it breaks', text: 'The game switches to live steps. Find the red box, fix it, hold 5 healthy steps, then read the postmortem.' },
+  { title: 'You run the system', text: 'Requests flow from your users, through the app server, to the database. Grow to 1M users.' },
+  { title: 'Watch their faces', text: 'Busy parts start sweating. Past 100% they panic, requests slow down and some fail.' },
+  { title: 'Click a part to upgrade it', text: 'Upgrades cost cash and land overnight, or a few steps later during an incident.' },
+  { title: 'When it breaks, fix it', text: 'Fix the panicking part, stay healthy for 5 steps, then read what happened.' },
 ];
 
 export function Coach({ onDone }: { onDone: () => void }) {
@@ -168,6 +169,7 @@ export function Coach({ onDone }: { onDone: () => void }) {
       <p className="eyebrow">
         {i + 1} / {COACH.length}
       </p>
+      <CoachArt step={i} />
       <h3>{c.title}</h3>
       <p>{c.text}</p>
       <div className="row">

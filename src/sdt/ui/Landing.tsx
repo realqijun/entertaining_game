@@ -56,14 +56,17 @@ export function Landing({ hasSave, onPlay, onContinue, onSignup }: { hasSave: bo
 
       <section className="pillars">
         <div>
+          <span className="pillar-ic" aria-hidden>🧩</span>
           <h3>Design</h3>
           <p>App servers, a load balancer, a read cache and a database. Real capacity numbers, not flavour text.</p>
         </div>
         <div>
+          <span className="pillar-ic" aria-hidden>🔥</span>
           <h3>Break</h3>
           <p>Viral spikes, flash sales and crashed instances. Find the bottleneck from the metrics, then act before users leave.</p>
         </div>
         <div>
+          <span className="pillar-ic" aria-hidden>📚</span>
           <h3>Learn</h3>
           <p>Each incident ends with a postmortem: the cause, what helped, what did not, and what to build next time.</p>
         </div>

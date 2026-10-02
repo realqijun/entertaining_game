@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
-import { DB_TIERS, SIZES } from '../content/balance';
+import { useEffect, useState, type ReactNode } from 'react';
+import { DB_TIERS } from '../content/balance';
 import type { Component, GameState, Instance } from '../engine/types';
+import { CacheArt, Crowd, DbArt, LbArt, ServerBox, moodFor } from './Art';
 import { ms, num, pct, utilTone } from './format';
 
-/** 2D architecture view: users → (load balancer) → app instances → (cache) → database. */
+/** 2D architecture view: users → (load balancer) → app instances → (cache) → database, drawn as little characters. */
 
 interface P {
   x: number;
@@ -21,10 +22,10 @@ interface Layout {
 }
 
 /** Wide screens read left to right; phones read top to bottom so nothing hides off-screen. */
-const WIDE: Layout = { w: 750, h: 300, vertical: false, users: { x: 70, y: 150 }, lb: { x: 210, y: 150 }, app: { x: 370, y: 150 }, cache: { x: 530, y: 150 }, db: { x: 680, y: 150 } };
-const TALL: Layout = { w: 360, h: 600, vertical: true, users: { x: 180, y: 42 }, lb: { x: 180, y: 140 }, app: { x: 180, y: 300 }, cache: { x: 180, y: 452 }, db: { x: 180, y: 550 } };
-const NODE_W = 112;
-const NODE_H = 62;
+const WIDE: Layout = { w: 760, h: 320, vertical: false, users: { x: 66, y: 150 }, lb: { x: 205, y: 150 }, app: { x: 378, y: 150 }, cache: { x: 548, y: 150 }, db: { x: 690, y: 150 } };
+const TALL: Layout = { w: 360, h: 680, vertical: true, users: { x: 150, y: 56 }, lb: { x: 150, y: 170 }, app: { x: 180, y: 330 }, cache: { x: 150, y: 500 }, db: { x: 150, y: 612 } };
+/** Half-size of each drawing, used for wire end points. */
+const ART = { x: 34, y: 30 };
 
 export function useNarrow(): boolean {
   const q = '(max-width: 640px)';
@@ -45,121 +46,77 @@ interface Props {
   compact?: boolean;
 }
 
-function Flow({ a, b, v, rps, tone, dead }: { a: P; b: P; v: boolean; rps: number; tone: string; dead?: boolean }) {
-  const w = Math.max(1.5, Math.min(7, Math.log10(Math.max(rps, 1)) * 1.6));
-  const dur = Math.max(0.35, 2.2 - Math.log10(Math.max(rps, 1)) * 0.45);
+/** A wire with glowing request dots travelling along it. More traffic → more, faster dots; failures show as red dots. */
+function Flow({ a, b, v, rps, tone, err = 0, dead }: { a: P; b: P; v: boolean; rps: number; tone: string; err?: number; dead?: boolean }) {
+  const lg = Math.log10(Math.max(rps, 1));
+  const w = Math.max(2, Math.min(7, lg * 1.6));
+  const dur = Math.max(0.9, 3 - lg * 0.55);
   const d = v
     ? `M${a.x},${a.y} C${a.x},${(a.y + b.y) / 2} ${b.x},${(a.y + b.y) / 2} ${b.x},${b.y}`
     : `M${a.x},${a.y} C${(a.x + b.x) / 2},${a.y} ${(a.x + b.x) / 2},${b.y} ${b.x},${b.y}`;
+  const dots = rps > 0 ? Math.max(1, Math.min(6, Math.round(lg * 1.6))) : 0;
+  const bad = dead ? dots : Math.round(dots * Math.min(1, err * 3));
   return (
     <g className={`flow tone-${tone}${dead ? ' dead' : ''}`}>
-      <path d={d} className="flow-bed" strokeWidth={w + 4} />
-      {rps > 0 && <path d={d} className="flow-dash" strokeWidth={w} style={{ animationDuration: `${dur}s` }} />}
+      <path d={d} className="flow-bed" strokeWidth={w + 6} />
+      <path d={d} className="flow-core" strokeWidth={Math.max(1.5, w / 2)} />
+      {Array.from({ length: dots }, (_, i) => (
+        <circle key={i} r={i < bad ? 3.4 : 3} className={i < bad ? 'pkt bad' : 'pkt'}>
+          <animateMotion dur={`${dur}s`} begin={`${-(i / dots) * dur}s`} repeatCount="indefinite" path={d} />
+        </circle>
+      ))}
     </g>
   );
 }
 
-function Node({
-  id,
-  x,
-  y,
-  w = 112,
-  h = 62,
-  title,
-  sub,
-  util,
-  tone,
-  selected,
-  ghost,
-  badge,
-  onSelect,
-  icon,
-}: {
+/** A clickable component: illustration centred on (x, y), with a short label underneath (or beside it on phones). */
+function Piece({ id, at, v, title, value, tone, selected, ghost, badge, onSelect, children }: {
   id: Component;
-  x: number;
-  y: number;
-  w?: number;
-  h?: number;
+  at: P;
+  v: boolean;
   title: string;
-  sub: string;
-  util?: number;
+  value: string;
   tone: string;
   selected: boolean;
   ghost?: boolean;
   badge?: string;
-  icon: React.ReactNode;
   onSelect?: (c: Component) => void;
+  children: ReactNode;
 }) {
+  const lx = v ? ART.x + 10 : 0;
+  const ly = v ? -2 : ART.y + 18;
   return (
     <g
-      className={`node tone-${tone}${selected ? ' sel' : ''}${ghost ? ' ghost' : ''}${onSelect ? ' clickable' : ''}`}
-      transform={`translate(${x - w / 2},${y - h / 2})`}
+      className={`piece tone-${tone}${selected ? ' sel' : ''}${ghost ? ' ghost' : ''}${onSelect ? ' clickable' : ''}`}
+      transform={`translate(${at.x},${at.y})`}
       onClick={onSelect ? () => onSelect(id) : undefined}
       role={onSelect ? 'button' : undefined}
       tabIndex={onSelect ? 0 : undefined}
       onKeyDown={onSelect ? (e) => (e.key === 'Enter' || e.key === ' ') && onSelect(id) : undefined}
-      aria-label={`${title}: ${sub}`}
+      aria-label={`${title}: ${value}`}
     >
-      <title>{`${title} · ${sub}`}</title>
-      <rect width={w} height={h} rx={12} className="node-box" />
-      <g transform="translate(10,10)" className="node-icon">
-        {icon}
-      </g>
-      <text x={34} y={22} className="node-title">
+      <title>{`${title} · ${value}`}</title>
+      <circle r={ART.x + 6} className="halo" />
+      <g className="art">{children}</g>
+      <text x={lx} y={ly} textAnchor={v ? 'start' : 'middle'} className="piece-title">
         {title}
       </text>
-      <text x={10} y={44} className="node-sub">
-        {sub}
+      <text x={lx} y={ly + 15} textAnchor={v ? 'start' : 'middle'} className="piece-val">
+        {value}
       </text>
-      {util !== undefined && (
-        <g transform={`translate(10,${h - 10})`}>
-          <rect width={w - 20} height={4} rx={2} className="bar-bed" />
-          <rect width={Math.min(1, util) * (w - 20)} height={4} rx={2} className="bar-fill" />
-        </g>
-      )}
       {badge && (
-        <g transform={`translate(${w - 8},-6)`}>
-          <rect x={-badge.length * 7 - 8} width={badge.length * 7 + 12} height={18} rx={9} className="badge" />
-          <text x={-badge.length * 3.5 - 2} y={13} className="badge-text" textAnchor="middle">
-            {badge}
-          </text>
+        <g transform={`translate(${v ? ART.x + 34 : 0},${v ? -ART.y + 4 : -ART.y - 22})`}>
+          <g className="badge-g">
+            <rect x={-badge.length * 3.4 - 7} y={-9} width={badge.length * 6.8 + 14} height={18} rx={9} className="badge" />
+            <text y={4} textAnchor="middle" className="badge-text">
+              {badge}
+            </text>
+          </g>
         </g>
       )}
     </g>
   );
 }
-
-const I = {
-  users: (
-    <g fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <circle cx={8} cy={8} r={7} />
-      <path d="M1 8h14M8 1c3 3 3 11 0 14M8 1c-3 3-3 11 0 14" />
-    </g>
-  ),
-  lb: (
-    <g fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
-      <path d="M1 8h5M6 8l8-6M6 8h8M6 8l8 6" />
-    </g>
-  ),
-  app: (
-    <g fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <rect x={1} y={1} width={14} height={6} rx={1.5} />
-      <rect x={1} y={9} width={14} height={6} rx={1.5} />
-      <path d="M4 4h1M4 12h1" strokeLinecap="round" />
-    </g>
-  ),
-  cache: (
-    <g fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round">
-      <path d="M9 1L3 9h5l-1 6 6-8H8z" />
-    </g>
-  ),
-  db: (
-    <g fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <ellipse cx={8} cy={3.5} rx={6.5} ry={2.5} />
-      <path d="M1.5 3.5v9c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v-9M1.5 8c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5" />
-    </g>
-  ),
-};
 
 function instTone(i: Instance, util: number): string {
   if (i.status === 'down') return 'over';
@@ -167,29 +124,29 @@ function instTone(i: Instance, util: number): string {
   return utilTone(util);
 }
 
-/** Where each instance box sits: a column on wide screens, a two-column grid on phones. */
+/** Where each server box sits: a column on wide screens, a two-column grid on phones. */
 function appGeometry(L: Layout, n: number, standby: boolean) {
   if (!L.vertical) {
-    const rowH = Math.min(46, 230 / n);
-    const h = Math.max(18, rowH - 6);
-    const top = L.app.y - (n * rowH) / 2;
-    const boxTop = Math.min(top, L.app.y - 48) - 26;
+    const rowH = Math.min(n === 1 ? 52 : 42, 232 / Math.max(n, 1));
+    const h = Math.max(15, rowH - 6);
+    const top = L.app.y - (n * rowH) / 2 + 8;
+    const boxTop = Math.min(top, L.app.y - 48) - 28;
     const boxH = Math.max(top + n * rowH, L.app.y + 48) - boxTop + 8 + (standby ? 24 : 0);
-    const cells = Array.from({ length: n }, (_, k) => ({ x: L.app.x - 60, y: top + k * rowH + (rowH - h) / 2, w: 120, h }));
-    const spare = { x: L.app.x - 60, y: boxTop + boxH - 28, w: 120, h: 18 };
-    return { cells, spare, box: { x: L.app.x - 68, y: boxTop, w: 136, h: boxH }, title: { x: L.app.x - 60, y: boxTop + 17 } };
+    const cells = Array.from({ length: n }, (_, k) => ({ x: L.app.x - 62, y: top + k * rowH + (rowH - h) / 2, w: 124, h }));
+    const spare = { x: L.app.x - 62, y: boxTop + boxH - 28, w: 124, h: 20 };
+    return { cells, spare, box: { x: L.app.x - 72, y: boxTop, w: 144, h: boxH }, title: { x: L.app.x, y: boxTop + 18 } };
   }
   const cols = n > 1 ? 2 : 1;
   const slots = n + (standby ? 1 : 0);
   const rows = Math.ceil(slots / cols);
-  const rowH = 30;
-  const cw = 120;
+  const rowH = 32;
+  const cw = 132;
   const gw = cols * cw + (cols - 1) * 8;
   const boxH = rows * rowH + 40;
   const boxTop = L.app.y - boxH / 2;
   const cell = (k: number) => ({ x: L.app.x - gw / 2 + (k % cols) * (cw + 8), y: boxTop + 30 + Math.floor(k / cols) * rowH, w: cw, h: rowH - 6 });
   const cells = Array.from({ length: n }, (_, k) => cell(k));
-  return { cells, spare: { ...cell(n), h: 18 }, box: { x: L.app.x - gw / 2 - 8, y: boxTop, w: gw + 16, h: boxH }, title: { x: L.app.x - gw / 2, y: boxTop + 18 } };
+  return { cells, spare: { ...cell(n), h: 20 }, box: { x: L.app.x - gw / 2 - 8, y: boxTop, w: gw + 16, h: boxH }, title: { x: L.app.x, y: boxTop + 19 } };
 }
 
 export function Canvas({ s, selected, onSelect, compact }: Props) {
@@ -208,49 +165,61 @@ export function Canvas({ s, selected, onSelect, compact }: Props) {
   const g = appGeometry(L, n, !!s.standby);
   const appTone = m.downShare > 0 ? 'over' : utilTone(m.appUtil);
   const dbTone = utilTone(m.dbUtil);
+  const err = m.errRate;
 
-  // Connection points on each node.
-  const out = (p: P, half = NODE_W / 2): P => (v ? { x: p.x, y: p.y + NODE_H / 2 } : { x: p.x + half, y: p.y });
-  const inn = (p: P, half = NODE_W / 2): P => (v ? { x: p.x, y: p.y - NODE_H / 2 } : { x: p.x - half, y: p.y });
-  const appIn: P = v ? { x: L.app.x, y: g.box.y } : { x: g.box.x + 8, y: L.app.y };
-  const appOut: P = v ? { x: L.app.x, y: g.box.y + g.box.h } : { x: g.box.x + g.box.w - 8, y: L.app.y };
+  // Wire end points on each drawing.
+  const out = (p: P): P => (v ? { x: p.x, y: p.y + ART.y } : { x: p.x + ART.x, y: p.y });
+  const inn = (p: P): P => (v ? { x: p.x, y: p.y - ART.y } : { x: p.x - ART.x, y: p.y });
+  const appIn: P = v ? { x: L.app.x, y: g.box.y } : { x: g.box.x + 6, y: L.app.y };
+  const appOut: P = v ? { x: L.app.x, y: g.box.y + g.box.h } : { x: g.box.x + g.box.w - 6, y: L.app.y };
   const entry = showLb ? out(L.lb) : out(L.users);
   const toApp = m.appLoad + m.admitted * m.downShare;
   const routed = s.instances.filter((i) => i.status !== 'booting').length;
+  const latTone = m.latency >= 500 ? 'over' : m.latency >= 300 ? 'hot' : 'ok';
+  const errTxt = `${(err * 100).toFixed(err > 0 && err < 0.1 ? 1 : 0)}% err`;
 
   return (
     <div className="canvas-wrap">
       <svg className={`canvas${compact ? ' compact' : ''}${v ? ' tall' : ''}`} viewBox={`0 0 ${L.w} ${L.h}`} role="group" aria-label="System architecture">
         <defs>
-          <pattern id="grid" width="25" height="25" patternUnits="userSpaceOnUse">
-            <path d="M25 0H0V25" fill="none" className="grid-line" />
+          <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+            <circle cx="12" cy="12" r="1" className="grid-dot" />
           </pattern>
+          <radialGradient id="floor" cx="50%" cy="45%" r="65%">
+            <stop offset="0" stopColor="#16223c" />
+            <stop offset="1" stopColor="#0a1020" />
+          </radialGradient>
         </defs>
+        <rect width={L.w} height={L.h} fill="url(#floor)" />
         <rect width={L.w} height={L.h} fill="url(#grid)" />
 
-        {showLb && <Flow a={out(L.users)} b={inn(L.lb)} v={v} rps={m.admitted} tone={appTone} />}
+        {showLb && <Flow a={out(L.users)} b={inn(L.lb)} v={v} rps={m.admitted} tone={appTone} err={err} />}
         {v ? (
-          <Flow a={entry} b={appIn} v={v} rps={toApp} tone={appTone} />
+          <Flow a={entry} b={appIn} v={v} rps={toApp} tone={appTone} err={err} />
         ) : (
           s.instances.map((inst, k) => {
             const c = g.cells[k];
             const live = s.lb ? inst.status !== 'booting' : k === 0;
-            return <Flow key={inst.id} a={entry} b={{ x: c.x, y: c.y + c.h / 2 }} v={v} rps={live ? toApp / Math.max(1, routed) : 0} tone={instTone(inst, m.appUtil)} dead={inst.status === 'down'} />;
+            return <Flow key={inst.id} a={entry} b={{ x: c.x, y: c.y + c.h / 2 }} v={v} rps={live ? toApp / Math.max(1, routed) : 0} tone={instTone(inst, m.appUtil)} err={err} dead={inst.status === 'down'} />;
           })
         )}
         {s.cache.on ? (
           <>
-            <Flow a={appOut} b={inn(L.cache, 50)} v={v} rps={m.served} tone={appTone} />
-            <Flow a={out(L.cache, 50)} b={inn(L.db)} v={v} rps={m.dbOps} tone={dbTone} />
+            <Flow a={appOut} b={inn(L.cache)} v={v} rps={m.served} tone={appTone} />
+            <Flow a={out(L.cache)} b={inn(L.db)} v={v} rps={m.dbOps} tone={dbTone} />
           </>
         ) : (
           <Flow a={appOut} b={inn(L.db)} v={v} rps={m.dbOps} tone={dbTone} />
         )}
 
-        <Node id="users" x={L.users.x} y={L.users.y} title="Users" sub={`${num(m.demand)} req/s`} tone={s.limit < 1 ? 'busy' : 'ok'} selected={selected === 'users'} onSelect={onSelect} icon={I.users} badge={s.limit < 1 ? `limit ${pct(s.limit)}` : s.workload.cause ? '↑ spike' : undefined} />
+        <Piece id="users" at={L.users} v={v} title="Users" value={`${num(m.demand)} req/s`} tone={s.limit < 1 ? 'busy' : 'ok'} selected={selected === 'users'} onSelect={onSelect} badge={s.limit < 1 ? `limit ${pct(s.limit)}` : s.workload.cause ? 'spike!' : undefined}>
+          <Crowd demand={m.demand} limited={s.limit < 1} spike={!!s.workload.cause} />
+        </Piece>
 
         {showLb && (
-          <Node id="lb" x={L.lb.x} y={L.lb.y} title="Balancer" sub={s.lb ? (s.hc ? 'health-checked' : 'round robin') : lbBuild ? 'building…' : '+ add'} tone={s.lb ? (m.downShare > 0 ? 'over' : 'ok') : 'pending'} ghost={!s.lb} selected={selected === 'lb'} onSelect={onSelect} icon={I.lb} badge={lbBuild ? `${lbBuild.left}⏱` : undefined} />
+          <Piece id="lb" at={L.lb} v={v} title="Balancer" value={s.lb ? (s.hc ? 'health checks' : 'round robin') : lbBuild ? 'building…' : '+ add'} tone={s.lb ? (m.downShare > 0 ? 'over' : 'ok') : 'pending'} ghost={!s.lb} selected={selected === 'lb'} onSelect={onSelect} badge={lbBuild ? `${lbBuild.left}⏱` : undefined}>
+            <LbArt on={s.lb} hc={s.hc} mood={m.downShare > 0 ? 'panic' : 'happy'} />
+          </Piece>
         )}
 
         <g
@@ -262,53 +231,45 @@ export function Canvas({ s, selected, onSelect, compact }: Props) {
           aria-label={`App servers ${pct(m.appUtil)} busy`}
         >
           <title>{`App servers · ${pct(m.appUtil)} of ${num(m.appCap)} req/s`}</title>
-          <rect x={g.box.x} y={g.box.y} width={g.box.w} height={g.box.h} rx={14} className="group-box" />
-          <text x={g.title.x} y={g.title.y} className="group-title">
-            App · {pct(m.appUtil)}
+          <rect x={g.box.x} y={g.box.y} width={g.box.w} height={g.box.h} rx={16} className="group-box" />
+          <text x={g.title.x} y={g.title.y} textAnchor="middle" className="group-title">
+            App servers · <tspan className="group-pct">{pct(m.appUtil)}</tspan>
           </text>
           {s.instances.map((inst, k) => {
             const c = g.cells[k];
-            const tone = instTone(inst, m.appUtil);
-            const label = inst.status === 'down' ? '✕ down' : inst.status === 'up' ? `${inst.size} · ${num(SIZES[inst.size].cap)}` : `${inst.status === 'resizing' ? '↻' : '⏻'} ${inst.timer}⏱`;
-            const roomy = c.h >= 22;
+            const label = inst.status === 'down' ? 'crashed' : inst.status === 'up' ? `size ${inst.size}` : `${inst.status === 'resizing' ? 'resizing' : 'booting'} ${inst.timer}⏱`;
             return (
-              <g key={inst.id} className={`inst tone-${tone}`} transform={`translate(${c.x},${c.y})`}>
-                <rect width={c.w} height={c.h} rx={7} className="inst-box" />
-                {roomy && (
-                  <text x={8} y={c.h / 2 + 4} className="inst-text">
-                    #{inst.id}
-                  </text>
-                )}
-                <text x={roomy ? 34 : 8} y={c.h / 2 + 4} className="inst-text">
-                  {label}
-                </text>
+              <g key={inst.id} className={`inst tone-${instTone(inst, m.appUtil)}`} transform={`translate(${c.x},${c.y})`}>
+                <ServerBox w={c.w} h={c.h} status={inst.status} util={m.appUtil} size={inst.size} label={label} />
               </g>
             );
           })}
           {s.standby && (
             <g className="inst standby" transform={`translate(${g.spare.x},${g.spare.y})`}>
-              <rect width={g.spare.w} height={18} rx={6} className="inst-box" />
-              <text x={8} y={13} className="inst-text">
-                spare {s.standby.status === 'up' ? 'ready' : `${s.standby.timer}⏱`}
-              </text>
+              <ServerBox w={g.spare.w} h={g.spare.h} status={s.standby.status === 'up' ? 'spare' : 'booting'} util={0} size={s.standby.size} label={s.standby.status === 'up' ? 'spare (ready)' : `spare ${s.standby.timer}⏱`} />
             </g>
           )}
         </g>
 
         {showCache && (
-          <Node id="cache" x={L.cache.x} y={L.cache.y} w={100} title="Cache" sub={s.cache.on ? `hit ${pct(m.cacheHit)}` : cacheBuild ? 'building…' : '+ add'} tone={s.cache.on ? (s.cache.warm < 1 ? 'busy' : 'ok') : 'pending'} ghost={!s.cache.on} selected={selected === 'cache'} onSelect={onSelect} icon={I.cache} badge={cacheBuild ? `${cacheBuild.left}⏱` : s.cache.on && s.cache.warm < 1 ? 'cold' : undefined} util={s.cache.on ? s.cache.warm : undefined} />
+          <Piece id="cache" at={L.cache} v={v} title="Cache" value={s.cache.on ? `hit ${pct(m.cacheHit)}` : cacheBuild ? 'building…' : '+ add'} tone={s.cache.on ? (s.cache.warm < 1 ? 'busy' : 'ok') : 'pending'} ghost={!s.cache.on} selected={selected === 'cache'} onSelect={onSelect} badge={cacheBuild ? `${cacheBuild.left}⏱` : s.cache.on && s.cache.warm < 1 ? 'warming' : undefined}>
+            <CacheArt on={s.cache.on} warm={s.cache.warm} mood={s.cache.warm < 1 ? 'ok' : 'happy'} />
+          </Piece>
         )}
 
-        <Node id="db" x={L.db.x} y={L.db.y} title="Database" sub={`${num(m.dbOps)}/${num(DB_TIERS[s.dbTier].cap)} ops`} util={m.dbUtil} tone={dbTone} selected={selected === 'db'} onSelect={onSelect} icon={I.db} badge={dbBuild ? `↑ ${dbBuild.left}⏱` : m.dbUtil >= 1 ? pct(m.dbUtil) : undefined} />
+        <Piece id="db" at={L.db} v={v} title="Database" value={`${num(m.dbOps)} / ${num(DB_TIERS[s.dbTier].cap)} ops`} tone={dbTone} selected={selected === 'db'} onSelect={onSelect} badge={dbBuild ? `upgrading ${dbBuild.left}⏱` : m.dbUtil >= 1 ? pct(m.dbUtil) : undefined}>
+          <DbArt util={m.dbUtil} mood={moodFor(m.dbUtil)} upgrading={!!dbBuild} />
+        </Piece>
 
-        <text x={v ? L.users.x + 118 : L.users.x} y={v ? L.users.y + 4 : L.users.y + 52} textAnchor={v ? 'start' : 'middle'} className={`lat-label tone-${m.latency >= 500 ? 'over' : m.latency >= 300 ? 'hot' : 'ok'}`}>
-          {v ? ms(m.latency) : `${ms(m.latency)} · ${(m.errRate * 100).toFixed(m.errRate > 0 && m.errRate < 0.1 ? 1 : 0)}% err`}
-        </text>
-        {v && (
-          <text x={L.users.x + 118} y={L.users.y + 20} className={`lat-label tone-${m.errRate >= 0.01 ? 'over' : 'ok'}`}>
-            {(m.errRate * 100).toFixed(m.errRate > 0 && m.errRate < 0.1 ? 1 : 0)}% err
+        <g className={`vitals tone-${latTone}`} transform={v ? `translate(${L.w - 92},${L.users.y - 16})` : `translate(${L.users.x - 50},${L.users.y + 82})`}>
+          <rect width={100} height={38} rx={10} className="vitals-box" />
+          <text x={50} y={16} textAnchor="middle" className="vitals-lat">
+            ⏱ {ms(m.latency)}
           </text>
-        )}
+          <text x={50} y={31} textAnchor="middle" className={`vitals-err${err >= 0.01 ? ' bad' : ''}`}>
+            {errTxt}
+          </text>
+        </g>
       </svg>
     </div>
   );
