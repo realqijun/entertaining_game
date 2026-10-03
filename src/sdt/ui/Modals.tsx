@@ -5,7 +5,8 @@ import * as A from '../engine/actions';
 import { postmortem } from '../engine/postmortem';
 import { availability, users } from '../engine/sim';
 import type { GameState, Incident, TechId } from '../engine/types';
-import { CoachArt } from './Art';
+import { APP_NAME, ENDINGS, MENTOR, MILESTONE_STORIES, storyForCause } from '../content/story';
+import { CoachArt, FounderAvatar, MentorAvatar, MentorSays } from './Art';
 import { avail, money, num } from './format';
 
 export function Modal({ children, onClose, wide, label }: { children: ReactNode; onClose?: () => void; wide?: boolean; label: string }) {
@@ -74,11 +75,23 @@ export function Research({ s, onPick, onClose }: { s: GameState; onPick: (id: Te
 
 export function Postmortem({ inc, onClose }: { inc: Incident; onClose: () => void }) {
   const pm = postmortem(inc);
+  const story = storyForCause(inc.workload.cause);
   const max = Math.max(1.2, ...inc.series.map((p) => Math.max(p.appUtil, p.dbUtil)));
   return (
     <Modal label="Postmortem">
-      <p className="eyebrow">Postmortem · Day {inc.day}</p>
+      <div className="pm-author">
+        <MentorAvatar size={48} />
+        <div>
+          <p className="eyebrow">Incident report · Day {inc.day}</p>
+          <small className="muted">by {MENTOR.name}, {MENTOR.title}</small>
+        </div>
+      </div>
       <h2>{pm.title}</h2>
+      {story && (
+        <p className="pm-headline">
+          {story.emoji} <i>“{story.text}”</i> {story.why}
+        </p>
+      )}
       <section className="pm">
         <h4>What happened</h4>
         <p>{pm.cause}</p>
@@ -126,8 +139,12 @@ export function Milestone({ s, index, onClose, onResearch }: { s: GameState; ind
     <Modal label="Milestone">
       <p className="eyebrow">Milestone {index + 1} of {MILESTONES.length}</p>
       <h2>🎉 {m.title}</h2>
+      <div className="story-end">
+        <FounderAvatar size={44} />
+        <p>{MILESTONE_STORIES[index]}</p>
+      </div>
       <p>
-        {num(m.users)} users. +{money(m.cash)} and <b className="accent">+1 research point</b>.
+        {num(m.users)} readers. +{money(m.cash)} and <b className="accent">+1 research point</b>.
       </p>
       {fresh.length > 0 && (
         <>
@@ -155,13 +172,13 @@ export function Milestone({ s, index, onClose, onResearch }: { s: GameState; ind
 }
 
 const COACH = [
-  { title: 'You run the system', text: 'Requests flow from your users, through the app server, to the database. Grow to 1M users.' },
-  { title: 'Watch their faces', text: 'Busy parts start sweating. Past 100% they panic, requests slow down and some fail.' },
+  { title: `Welcome to ${APP_NAME}!`, text: 'Your news app just launched. Every reader request goes through your app server to the database. Grow to 1 million readers!' },
+  { title: 'Watch their faces', text: 'Busy parts start sweating. Past 100% they panic, pages slow down and some fail.' },
   { title: 'Click a part to upgrade it', text: 'Upgrades cost cash and land overnight, or a few steps later during an incident.' },
-  { title: 'When it breaks, fix it', text: 'Fix the panicking part, stay healthy for 5 steps, then read what happened.' },
+  { title: 'When it breaks, fix it', text: 'Fix whoever is panicking and stay healthy for 5 steps. Then I\'ll write you a report on what happened.' },
 ];
 
-export function Coach({ onDone }: { onDone: () => void }) {
+export function Coach({ founder, onReroll, onDone }: { founder: string; onReroll: () => void; onDone: () => void }) {
   const [i, setI] = useState(0);
   const c = COACH[i];
   return (
@@ -169,9 +186,22 @@ export function Coach({ onDone }: { onDone: () => void }) {
       <p className="eyebrow">
         {i + 1} / {COACH.length}
       </p>
+      {i === 0 && (
+        <div className="founder-card">
+          <FounderAvatar size={56} />
+          <div>
+            <small>You are</small>
+            <b>{founder}</b>
+            <small>founder of {APP_NAME} 🦖📰</small>
+          </div>
+          <button className="btn sm ghost" onClick={onReroll} title="Pick another dinosaur name">
+            🎲
+          </button>
+        </div>
+      )}
       <CoachArt step={i} />
       <h3>{c.title}</h3>
-      <p>{c.text}</p>
+      <MentorSays small>{i === 0 ? `I'm ${MENTOR.name}, the oldest system architect on Pangaea. ${c.text}` : c.text}</MentorSays>
       <div className="row">
         <button className="btn ghost sm" onClick={onDone}>
           Skip
@@ -184,12 +214,6 @@ export function Coach({ onDone }: { onDone: () => void }) {
   );
 }
 
-const ENDINGS = {
-  win: { icon: '🏆', title: 'You reached 1 million users' },
-  bankrupt: { icon: '💸', title: 'Out of cash' },
-  reputation: { icon: '📉', title: 'Your users left' },
-  timeout: { icon: '⏰', title: 'Investors ran out of patience' },
-} as const;
 
 const TIPS: Record<string, string> = {
   reputation: 'An incident ran too long. Next time, find the red box first, and use 💡 Hint if you are stuck.',
@@ -244,6 +268,10 @@ export function EndRun({ s, onSurvey, onAgain, onJoin, onHome }: {
       <h2>
         {end.icon} {end.title}
       </h2>
+      <div className="story-end">
+        <FounderAvatar size={44} mood={s.over!.reason === 'win' ? 'happy' : 'sweat'} />
+        <p>{end.story}</p>
+      </div>
       <div className="results">
         <div>
           <small>Users</small>

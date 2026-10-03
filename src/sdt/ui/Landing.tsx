@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { computeMetrics, newGame } from '../engine/sim';
+import { APP_NAME, FOUNDERS, HEADLINES, MENTOR } from '../content/story';
+import { FounderAvatar, MentorAvatar } from './Art';
 import { Canvas } from './Canvas';
 
 /** The game's own canvas, frozen at the first incident: a viral spike saturating the database. */
 function demoState() {
   const s = newGame(1);
-  s.workload = { demand: 925, read: 0.85, cacheable: 1, cause: 'Viral blog post' };
+  s.workload = { demand: 925, read: 0.85, cacheable: 1, cause: 'Meteor panic goes viral' };
   s.metrics = computeMetrics(s, s.workload, false);
   return s;
 }
@@ -29,11 +31,13 @@ export function Landing({ hasSave, onPlay, onContinue, onSignup }: { hasSave: bo
       <section className="hero">
         <p className="eyebrow">System Design Tycoon · public beta</p>
         <h1>
-          500,000 users. One database.
+          500,000 dinosaurs. One database.
           <br />
           <span className="grad">Servers on fire.</span> What do you do?
         </h1>
-        <p className="lede">Grow a startup from 50k to 1 million users by designing the system behind it. Scale, cache, balance and fail over. Every outage ends with a postmortem that shows why.</p>
+        <p className="lede">
+          You are <b>{FOUNDERS[0]}</b>, founder of <b>{APP_NAME}</b>, the hottest news app on Pangaea. Everyone wants to read about the bright light in the sky. Grow from 50k to 1 million readers by designing the system behind it: scale, cache, balance and fail over. When it breaks, {MENTOR.name} explains why.
+        </p>
         <div className="cta-row">
           <button className="btn primary big" onClick={onPlay}>
             ▶ Play the beta
@@ -50,8 +54,30 @@ export function Landing({ hasSave, onPlay, onContinue, onSignup }: { hasSave: bo
       <section className="demo" aria-label="Game preview">
         <Canvas s={demo} selected="db" compact />
         <p className="demo-cap">
-          The database is at <b className="bad">154%</b>. Adding app servers will not save you.
+          ☄️ Meteor panic goes viral. The database is at <b className="bad">154%</b> and panicking. Adding app servers will not save it.
         </p>
+      </section>
+
+      <section className="cast" aria-label="The cast">
+        <div>
+          <FounderAvatar size={64} />
+          <b>You</b>
+          <small>{FOUNDERS.slice(0, 3).join(' · ')}…</small>
+        </div>
+        <div>
+          <MentorAvatar size={64} />
+          <b>{MENTOR.name}</b>
+          <small>Your mentor. Gives hints, writes every incident report.</small>
+        </div>
+        <div className="cast-news">
+          <span className="news-logo">🦖📰</span>
+          <b>{APP_NAME}</b>
+          {HEADLINES.slice(0, 3).map((h) => (
+            <small key={h.text}>
+              {h.emoji} {h.text}
+            </small>
+          ))}
+        </div>
       </section>
 
       <section className="pillars">

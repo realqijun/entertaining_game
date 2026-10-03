@@ -8,10 +8,10 @@ import type { GameState, TrafficEvent } from '../engine/types';
  */
 export function buildSchedule(s: GameState): { events: TrafficEvent[]; failureDays: number[] } {
   const events: TrafficEvent[] = [
-    { id: 'viral', name: 'Viral blog post', day: 6, days: 2, mult: 2, read: 0.85, cacheable: 1 },
+    { id: 'viral', name: 'Meteor panic goes viral', day: 6, days: 2, mult: 2, read: 0.85, cacheable: 1 },
     {
       id: 'flashSale',
-      name: 'Flash sale',
+      name: 'Pterodactyl comment storm',
       day: randInt(s, 15, 18),
       days: 2,
       mult: 1.6 + rand(s) * 0.4,
@@ -20,7 +20,7 @@ export function buildSchedule(s: GameState): { events: TrafficEvent[]; failureDa
     },
     {
       id: 'keynote',
-      name: 'Conference keynote',
+      name: 'Raptor crime spree, live',
       day: randInt(s, 25, 29),
       days: 2,
       mult: 1.8 + rand(s) * 0.4,

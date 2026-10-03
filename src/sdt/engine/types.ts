@@ -137,6 +137,8 @@ export type EndReason = 'win' | 'bankrupt' | 'reputation' | 'timeout';
 export interface GameState {
   version: 1;
   seed: number;
+  /** Story only: the player's dinosaur founder name. */
+  founder?: string;
   rng: number;
   mode: Mode;
   day: number;

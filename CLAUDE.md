@@ -33,7 +33,7 @@ src/sdt/engine/       Pure, deterministic simulation (no React, no DOM)
   sim.ts              newGame, computeMetrics (the request pipeline), advanceDay, liveStep
   actions.ts          Every player action; returns an error string or null
   postmortem.ts       Incident trace → cause / impact / what helped / prevention
-src/sdt/content/      balance.ts (all tunable numbers), tech.ts (9-node tree), events.ts (traffic + failure schedule)
+src/sdt/content/      balance.ts (all tunable numbers), tech.ts (9-node tree), events.ts (traffic + failure schedule), story.ts (dinosaur cast, headlines, mentor lines)
 src/sdt/ui/           React: Landing, Game, Canvas (SVG architecture), Art (SVG characters, gauges, onboarding scenes), Inspector, Panels (HUD/metrics/incident bar), Modals, Stats
 src/sdt/analytics.ts  Playtest events (localStorage + optional VITE_ANALYTICS_URL), cohort and source detection, sign-ups
 src/sdt/report.ts     Success targets, observation thresholds, and the report computed from events
@@ -58,5 +58,6 @@ tests/sdt/            Engine and report tests, plus a heuristic bot (bot.ts: sma
 - Player-facing copy is plain and short, and each tech/postmortem line should teach a real system-design concept accurately (simplified, not production advice).
 - Styling lives in `src/sdt/styles.css` (CSS variables on `:root`, dark theme). Layouts must work down to 390px wide with no horizontal scroll. The canvas switches to a vertical layout at ≤ 640px.
 - Components are drawn as characters in `src/sdt/ui/Art.tsx`. Their faces show load (`moodFor`: happy → ok → sweat → panic, plus dead and sleep). Prefer pictures, faces and gauges over extra text. In SVG, a CSS `transform` animation overrides the element's `transform` attribute, so put animations on an inner `<g>` and the position on the outer one.
+- **Story layer** (`content/story.ts`): you are a dinosaur founder (`s.founder`) running the news app *The Daily Roar*. Your mentor Prof. Archie Tectopteryx gives hints and signs postmortems. Each traffic event has a headline explaining its read/write mix. Story picks use `hash(seed, day)` and never `rand`, so they cannot change a run. Story text frames the lesson but never replaces the real numbers.
 - Sounds are synthesized in `src/sdt/ui/sfx.ts`. Apart from `public/og.png` and the favicon there are no binary assets.
 - Add or update tests alongside engine or report changes.

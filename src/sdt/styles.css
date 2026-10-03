@@ -389,3 +389,56 @@ i.db { background: var(--accent2); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* ───── story ───── */
+.avatar { display: block; flex-shrink: 0; }
+.founder-bg { fill: #14532d; }
+.mentor-bg { fill: #312e81; }
+.story-brand { display: flex; align-items: center; gap: 8px; text-align: left; }
+.brand-txt { display: flex; flex-direction: column; line-height: 1.1; }
+.brand-txt b { font-family: var(--sans); font-size: 15px; letter-spacing: -0.01em; }
+.brand-txt small { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
+.mentor-says { display: flex; gap: 10px; align-items: flex-start; flex: 1; }
+.mentor-bubble { position: relative; background: #eef2ff; color: #1e1b4b; border-radius: 4px 14px 14px 14px; padding: 8px 12px; font-size: 13.5px; line-height: 1.4; }
+.mentor-bubble b { color: #4338ca; }
+.mentor-says.small .mentor-bubble { font-size: 13px; }
+.hint-box { align-items: center; }
+.founder-card { display: flex; align-items: center; gap: 12px; padding: 8px 10px; margin-bottom: 8px; background: rgba(74, 222, 128, 0.08); border: 1px solid rgba(74, 222, 128, 0.35); border-radius: 12px; }
+.founder-card > div { display: flex; flex-direction: column; flex: 1; }
+.founder-card b { font-size: 17px; }
+.founder-card small { color: var(--muted); font-size: 11px; }
+.coach .mentor-says { margin-top: 4px; }
+
+.news { margin: 8px 6px 4px; background: #f8fafc; color: #0f172a; border-radius: 14px; padding: 10px 12px; border: 3px solid #1e293b; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); }
+.news.hot { border-color: #f97316; }
+.news-top { display: flex; align-items: center; gap: 6px; padding-bottom: 6px; border-bottom: 2px solid #0f172a; margin-bottom: 8px; }
+.news-top b { font-family: Georgia, 'Times New Roman', serif; font-size: 17px; font-weight: 900; letter-spacing: -0.01em; }
+.news-logo { font-size: 18px; }
+.news-day { margin-left: auto; font-size: 11px; color: #64748b; font-family: var(--mono); }
+.news-live { margin-left: auto; font-size: 11px; font-weight: 800; color: #dc2626; animation: blink 0.9s infinite; }
+.news-lead { display: flex; gap: 10px; align-items: flex-start; }
+.news-emoji { font-size: 30px; line-height: 1; }
+.news-lead p { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 15.5px; line-height: 1.25; }
+.news-lead small { display: block; margin-top: 3px; color: #475569; font-size: 11.5px; }
+.news-trend { display: inline-block; font-size: 10px; font-weight: 800; color: #fff; background: #f97316; border-radius: 6px; padding: 1px 6px; margin-bottom: 3px; }
+.news-old { margin: 6px 0 0; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-family: Georgia, serif; font-size: 13px; color: #334155; }
+.news-next { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: #b45309; background: #fef3c7; border-radius: 8px; padding: 4px 8px; }
+
+.pm-author { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.pm-author .eyebrow { margin: 0; }
+.pm-headline { background: #f8fafc; color: #0f172a; border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+.pm-headline i { font-family: Georgia, serif; font-weight: 700; font-style: normal; }
+.story-end { display: flex; gap: 10px; align-items: center; background: var(--bg2); border-radius: 12px; padding: 8px 12px; margin: 8px 0; }
+.story-end p { margin: 0; font-size: 13.5px; }
+
+.cast { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 10px 0 0; }
+.cast > div { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.cast small { color: var(--muted); font-size: 12px; }
+.cast-news { background: #f8fafc !important; color: #0f172a; align-items: flex-start !important; text-align: left !important; }
+.cast-news b { font-family: Georgia, serif; font-size: 17px; }
+.cast-news small { color: #334155; font-family: Georgia, serif; font-size: 12.5px; border-top: 1px dashed #cbd5e1; padding-top: 4px; }
+@media (max-width: 640px) {
+  .cast { grid-template-columns: 1fr; }
+  .brand-txt small { display: none; }
+  .news-lead p { font-size: 14px; }
+}

@@ -25,6 +25,15 @@ This maps the build to §3.1 ("Defined MVP scope") and §7 ("High-Level Design")
 | Run reset / save | Auto-save to localStorage, continue from the landing page, play again from the end screen. |
 | Landing page + CTA, playtest analytics | Landing page at `/` with "Play the beta" and an email sign-up. Analytics and a facilitator dashboard at `/#/stats` (see `EVALUATION.md`). |
 
+## Story layer
+
+Pure flavour on top of the MVP, with no new actions or rules:
+
+- You are a dinosaur tech founder (Steve Jobasaurus, Ada Lovelaceratops, Linus Torvaldsaurus…) running **The Daily Roar**, a news app on Pangaea.
+- The app's front page shows a daily headline. Each traffic event is a story that explains its workload: a viral meteor scare is read-heavy, a comment storm under the Pterodactyl interview is write-heavy, and live raptor crime coverage is read-heavy.
+- **Prof. Archie Tectopteryx** (an Archaeopteryx system architect) narrates onboarding, calls out incidents, gives the hint ladder and signs every postmortem.
+- Milestones are told as funding news, and each run ending has a short story.
+
 ## Trimmed for the first run (professor feedback)
 
 A new player should learn one idea at a time while the clock runs. We kept the depth but changed **when** options appear.
@@ -49,7 +58,7 @@ A new player should learn one idea at a time while the clock runs. We kept the d
 | Moment | Decisions available |
 | --- | --- |
 | Days 1–5 | Spend 1 research point (Scale up / Larger DB / Read cache), upgrade the DB, resize the app server, run a promotion |
-| Forecast on day 5 | The same, now with a reason ("Viral blog post tomorrow, read-heavy") |
+| Forecast on day 5 | The same, now with a reason ("Meteor panic goes viral tomorrow, read-heavy") |
 | Incident on day 6 | Upgrade the DB, add the cache (if researched), limit traffic, or a wrong move (resize the app server) |
 
 That is about 5 distinct actions before the first postmortem, against dozens in the previous build.

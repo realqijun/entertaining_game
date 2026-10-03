@@ -78,7 +78,7 @@ describe('incidents', () => {
       toDay(s, 6);
       expect(s.day).toBe(6);
       expect(s.mode).toBe('live');
-      expect(s.workload.cause).toBe('Viral blog post');
+      expect(s.workload.cause).toBe('Meteor panic goes viral');
       expect(s.metrics.bottleneck).toBe('db');
     }
   });
@@ -103,7 +103,7 @@ describe('incidents', () => {
     const inc = s.incidents[0];
     const pm = postmortem(inc);
     expect(pm.title).toBe('Database overload');
-    expect(pm.cause).toContain('Viral blog post');
+    expect(pm.cause).toContain('Meteor panic goes viral');
     expect(pm.worked.join(' ')).toContain('Upgraded database');
     expect(pm.didNot.join(' ')).toContain('Resized');
   });

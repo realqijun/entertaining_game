@@ -1,3 +1,4 @@
+import { founderFor } from '../content/story';
 import { BAL, BUILD, CACHE, DB_TIERS, INSTANCE_DELAY, MILESTONES, SIZES } from '../content/balance';
 import { buildSchedule, describeEvent, eventOn, NORMAL } from '../content/events';
 import { rand } from './rng';
@@ -9,6 +10,7 @@ export function newGame(seed: number): GameState {
   const s: GameState = {
     version: 1,
     seed,
+    founder: founderFor(seed),
     rng: seed >>> 0,
     mode: 'day',
     day: 1,

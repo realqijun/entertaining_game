@@ -6,7 +6,9 @@ import type { Component, GameState } from '../engine/types';
 import { Canvas } from './Canvas';
 import { Inspector, type Run } from './Inspector';
 import { Coach, EndRun, Milestone, Postmortem, Research } from './Modals';
-import { Feed, Hud, IncidentBar, Metrics } from './Panels';
+import { FOUNDERS, MENTOR, MENTOR_INCIDENT, crashStory } from '../content/story';
+import { MentorSays } from './Art';
+import { Feed, Hud, IncidentBar, Metrics, NewsApp } from './Panels';
 import { sfx } from './sfx';
 import { useGame, writeSave } from './useGame';
 
@@ -34,6 +36,7 @@ export function Game({ initial, run, onAgain, onHome, onJoin }: Props) {
   const [sel, setSel] = useState<Component | null>(null);
   const [tree, setTree] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
+  const [callout, setCallout] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const startedAt = useRef(Date.now());
   const seen = useRef({ incident: s.incident?.id ?? 0, resolved: s.incidents.length, over: !!s.over, milestone: s.milestone, mode: s.mode });
@@ -45,6 +48,8 @@ export function Game({ initial, run, onAgain, onHome, onJoin }: Props) {
       p.incident = s.incident.id;
       track('incident_start', { run, variant: s.incident.variant, day: s.day });
       sfx.alarm();
+      setHint(null);
+      setCallout(`${s.incident.variant === 'instance' ? `${crashStory(s.seed, s.day)} ` : ''}${MENTOR_INCIDENT[s.incident.variant]}`);
     }
     if (s.incidents.length > p.resolved) {
       const inc = s.incidents[s.incidents.length - 1];
@@ -52,6 +57,7 @@ export function Game({ initial, run, onAgain, onHome, onJoin }: Props) {
       track('incident_resolved', { run, variant: inc.variant, steps: (inc.endStep ?? 0) - inc.startStep, hints: inc.hints, ms: Date.now() - startedAt.current });
       sfx.ship();
       setHint(null);
+      setCallout(null);
     }
     if (s.mode !== p.mode) {
       if (s.mode === 'live' && !s.incident) sfx.bad();
@@ -122,10 +128,19 @@ export function Game({ initial, run, onAgain, onHome, onJoin }: Props) {
           track('hint', { run, mode: s.mode });
         }}
       />
-      {hint && (
+      {(hint || callout) && (
         <div className="hint-box" role="note">
-          <span>💡 {hint}</span>
-          <button className="x" onClick={() => setHint(null)} aria-label="Close hint">
+          <MentorSays small>
+            <b>{MENTOR.short}:</b> {hint ?? callout}
+          </MentorSays>
+          <button
+            className="x"
+            onClick={() => {
+              setHint(null);
+              setCallout(null);
+            }}
+            aria-label="Close"
+          >
             ✕
           </button>
         </div>
@@ -133,6 +148,7 @@ export function Game({ initial, run, onAgain, onHome, onJoin }: Props) {
       <main className="board">
         <div className="stage">
           <Canvas s={s} selected={sel} onSelect={select} />
+          <NewsApp s={s} />
           <Feed s={s} />
         </div>
         <aside className="side">
@@ -155,6 +171,14 @@ export function Game({ initial, run, onAgain, onHome, onJoin }: Props) {
       {toast && <div className="toast">{toast}</div>}
       {coach && (
         <Coach
+          founder={s.founder ?? FOUNDERS[0]}
+          onReroll={() => {
+            act((st) => {
+              const i = FOUNDERS.indexOf(st.founder ?? FOUNDERS[0]);
+              st.founder = FOUNDERS[(i + 1) % FOUNDERS.length];
+            });
+            sfx.click();
+          }}
           onDone={() => {
             setCoach(false);
             setPaused(false);

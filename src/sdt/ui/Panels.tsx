@@ -1,7 +1,8 @@
 import { BAL, MILESTONES } from '../content/balance';
 import { availability, dailyCost, dailyRevenue, users } from '../engine/sim';
 import type { GameState, Point } from '../engine/types';
-import { Gauge } from './Art';
+import { APP_NAME, EVENT_STORIES, headlineFor, readsFor, type Headline } from '../content/story';
+import { FounderAvatar, Gauge } from './Art';
 import { avail, money, ms, num, pct, utilTone } from './format';
 
 export function Hud({ s, paused, fast, onPause, onFast, onNext, onResearch, onMenu, researchPulse }: {
@@ -22,8 +23,12 @@ export function Hud({ s, paused, fast, onPause, onFast, onNext, onResearch, onMe
   const net = dailyRevenue(s.metrics) - dailyCost(s);
   return (
     <header className="hud">
-      <button className="brand" onClick={onMenu} title="Menu">
-        99.99<span>%</span>
+      <button className="brand story-brand" onClick={onMenu} title={`${s.founder ?? 'You'}, founder of ${APP_NAME} · Menu`}>
+        <FounderAvatar size={34} mood={s.incident ? 'sweat' : 'happy'} />
+        <span className="brand-txt">
+          <b>{APP_NAME}</b>
+          <small>{s.founder ?? 'Founder'}</small>
+        </span>
       </button>
       <div className="hud-stat" title={`Day ${s.day} of ${BAL.lastDay}. The run ends if you have not reached 1M users by day ${BAL.lastDay}.`}>
         <span className="hud-ic">📅</span>
@@ -190,5 +195,43 @@ export function Feed({ s }: { s: GameState }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/** The player's product: today's front page of the dinosaur news app. Story only, read-only. */
+export function NewsApp({ s }: { s: GameState }) {
+  const u = users(s);
+  const ev = s.events.find((e) => s.day >= e.day && s.day < e.day + e.days);
+  const next = s.events.find((e) => e.day === s.day + 1);
+  const top = (ev && EVENT_STORIES[ev.id]) || headlineFor(s.seed, s.day);
+  const hot = !!ev;
+  const older = [1, 2].map((k) => (s.day - k >= 1 ? headlineFor(s.seed, s.day - k) : null)).filter((h): h is Headline => !!h && h.text !== top.text);
+  const nextStory = next ? EVENT_STORIES[next.id] : null;
+  return (
+    <section className={`news${hot ? ' hot' : ''}`} aria-label={`${APP_NAME} front page`}>
+      <header className="news-top">
+        <span className="news-logo">🦖📰</span>
+        <b>{APP_NAME}</b>
+        {s.mode === 'live' ? <span className="news-live">● LIVE</span> : <span className="news-day">Day {s.day}</span>}
+      </header>
+      <article className="news-lead">
+        <span className="news-emoji" aria-hidden>{top.emoji}</span>
+        <div>
+          {hot && <span className="news-trend">🔥 Trending</span>}
+          <p>{top.text}</p>
+          <small>👀 {num(readsFor(u, s.seed, s.day, hot))} reads{hot && 'why' in top ? ` · ${(top as { why: string }).why}` : ''}</small>
+        </div>
+      </article>
+      {older.map((h) => (
+        <p key={h.text} className="news-old">
+          {h.emoji} {h.text}
+        </p>
+      ))}
+      {nextStory && s.mode === 'day' && (
+        <p className="news-next">
+          📅 Tomorrow: {nextStory.emoji} {nextStory.text}
+        </p>
+      )}
+    </section>
   );
 }

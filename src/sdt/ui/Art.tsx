@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 /**
  * Illustrated SVG pieces for the architecture canvas. Every component is a little character
  * whose face reacts to load, so a first-time player can read the system state at a glance.
@@ -286,6 +287,59 @@ export function Gauge({ u, label, sub }: { u: number; label: string; sub: string
       </svg>
       <b className={`tone-${u >= 1 ? 'over' : u >= 0.85 ? 'hot' : u >= 0.7 ? 'busy' : 'ok'}`}>{Math.round(u * 100)}%</b>
       <span>{label}</span>
+    </div>
+  );
+}
+
+/** You: a green T-rex founder in a black turtleneck and round glasses. */
+export function FounderAvatar({ size = 40, mood = 'happy' as Mood }: { size?: number; mood?: Mood }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" className="avatar founder" aria-hidden>
+      <circle cx={32} cy={32} r={31} className="av-bg founder-bg" />
+      <path d="M12,64 q0,-16 20,-17 q20,1 20,17z" fill="#111827" />
+      <path d="M26,47 h12 v5 h-12z" fill="#1f2937" />
+      <path d="M16,34 q-2,-20 18,-22 q20,0 20,15 q0,9 -8,11 l-16,2 q-12,0 -14,-6z" fill="#4ade80" stroke="#166534" strokeWidth={1.5} />
+      <path d="M22,13 l3,-5 l3,5 l3,-6 l3,6 l3,-5 l2,6" fill="#22c55e" />
+      <path d="M30,37 l3,3 l3,-3 l3,3 l3,-3" fill="none" stroke="#fff" strokeWidth={1.6} strokeLinejoin="round" />
+      <circle cx={46} cy={27} r={1.6} fill="#166534" />
+      <g fill="none" stroke="#0f172a" strokeWidth={2}>
+        <circle cx={27} cy={25} r={5} />
+        <circle cx={39} cy={25} r={5} />
+        <path d="M32,25 h2" />
+      </g>
+      <Face cx={33} cy={26} r={9} mood={mood} />
+    </svg>
+  );
+}
+
+/** Prof. Archie Tectopteryx: a feathered Archaeopteryx system architect with spectacles and a bow tie. */
+export function MentorAvatar({ size = 40 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" className="avatar mentor" aria-hidden>
+      <circle cx={32} cy={32} r={31} className="av-bg mentor-bg" />
+      <path d="M14,64 q0,-18 18,-18 q18,0 18,18z" fill="#6366f1" />
+      <path d="M26,49 l6,4 l6,-4 l-6,-3z" fill="#f43f5e" />
+      <path d="M18,22 l-6,-8 l9,3 l-2,-9 l7,6 l1,-8 l5,8" fill="#a78bfa" />
+      <ellipse cx={32} cy={30} rx={15} ry={14} fill="#818cf8" stroke="#3730a3" strokeWidth={1.5} />
+      <path d="M40,32 l13,3 l-13,4z" fill="#fbbf24" stroke="#b45309" strokeWidth={1} />
+      <g fill="#fff" stroke="#1e1b4b" strokeWidth={1.8}>
+        <circle cx={27} cy={27} r={5} />
+        <circle cx={38} cy={27} r={5} />
+      </g>
+      <path d="M32,27 h1" stroke="#1e1b4b" strokeWidth={1.8} />
+      <circle cx={28} cy={27.5} r={1.8} fill="#1e1b4b" />
+      <circle cx={39} cy={27.5} r={1.8} fill="#1e1b4b" />
+      <path d="M22,20 q5,-3 9,0 M34,20 q5,-3 9,0" fill="none" stroke="#3730a3" strokeWidth={1.6} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** A speech bubble from Archie (hints, incident calls, onboarding). */
+export function MentorSays({ children, small }: { children: ReactNode; small?: boolean }) {
+  return (
+    <div className={`mentor-says${small ? ' small' : ''}`}>
+      <MentorAvatar size={small ? 34 : 46} />
+      <div className="mentor-bubble">{children}</div>
     </div>
   );
 }
